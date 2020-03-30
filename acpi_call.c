@@ -5,8 +5,8 @@
 #include <linux/version.h>
 #include <linux/proc_fs.h>
 #include <linux/slab.h>
-#include <asm/uaccess.h>
-#include <acpi/acpi.h>
+#include <linux/uaccess.h>
+#include <linux/acpi.h>
 
 MODULE_LICENSE("GPL");
 
@@ -20,6 +20,10 @@ MODULE_LICENSE("GPL");
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0)
 #define HAVE_PROC_CREATE
+#endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
+#define HAVE_PROC_OPS
 #endif
 
 extern struct proc_dir_entry *acpi_root_dir;
@@ -317,11 +321,18 @@ static ssize_t acpi_proc_read( struct file *filp, char __user *buff,
     return ret;
 }
 
+#ifdef HAVE_PROC_OPS
+static struct proc_ops proc_acpi_operations = {
+    .proc_read  = acpi_proc_read,
+    .proc_write = acpi_proc_write,
+};
+#else /* HAVE_PROC_OPS */
 static struct file_operations proc_acpi_operations = {
         .owner    = THIS_MODULE,
         .read     = acpi_proc_read,
         .write    = acpi_proc_write,
 };
+#endif /* HAVE_PROC_OPS */
 
 #else
 static int acpi_proc_read(char *page, char **start, off_t off,
